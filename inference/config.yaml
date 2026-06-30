@@ -1,0 +1,55 @@
+paths:
+   output_directory : '../results/'
+
+priors:
+
+    tE:
+        distribution: 'loguniform'
+        parameters:
+            lower: 0.01
+            upper: 3
+
+    u0:
+        distribution: 'signedloguniform'
+        parameters:
+            lower: 0.005
+            upper: 10
+            sign: 1
+
+    piE:
+        distribution: 'log10normal'
+        parameters:
+            meanlog10: -0.5
+            stdlog10: 0.5
+            upper: 3
+
+    pmrac_S:
+        distribution: 'normal'
+        parameters:
+            mean: -3
+            std: 5
+            lower: -18
+            upper: 12
+
+    pmdec_S:
+        distribution: 'normal'
+        parameters:
+            mean: -5
+            std: 5
+            lower: -20
+            upper: 10
+
+    thetaE:
+        distribution: 'loguniform'
+        parameters:
+            lower: 0.01
+            upper: 30
+
+    varpi_S:
+        distribution: 'loguniform'
+        parameters:
+            lower: 0.01
+            upper: 2
+
+nested_sampling:
+    nlive: 100
