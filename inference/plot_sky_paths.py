@@ -6,6 +6,7 @@ import astropy.units as u
 from astropy.time import Time
 from astropy.table import Table
 import astromet
+import gaiascanlaw
 
 from utils import astrometry_sim, rotation
 
@@ -255,19 +256,24 @@ def medianModelMags(t_obs, refEpoch, ra, dec, fE, fN, tE, u0, piE, pmrac_S, pmde
     
     return mags
 
-def plot_times(ax, ref=True, refEpoch=2017.5, labels=True):
+def plot_times(ax, ref=True, releases=True, refEpoch=2017.5, true_params=None, labels=True):
 
     if(labels):
-        label_ref, label_t0, label_tE, label_max = 'reference epoch', r'lensing event $t_0$', r'$t_0 \pm t_{\rm E}$', r'max astrom. shift'
+        label_ref, label_dr, label_t0 = 'reference epoch', '$Gaia$ DR(1,2,3,4) extents', r'lensing event $t_0$'
     else:
-        label_dr, label_ref, label_dec, label_t0, label_tE, label_max = '', '', '', '', '', ''
+        label_ref, label_dr, label_t0 = '', '', ''
 
     if ref: ax.axvline(refEpoch, color=color_ref, label=label_ref)
 
-    if phot_params is not None:
-        t0, tE, u0 = phot_params.t0, phot_params.tE, phot_params.u0
-        tau_shift_max = np.sqrt(2 - u0**2)
-        ax.axvline(t0, color=color_event, ls='-', label=label_t0)
+    if releases:
+        for timestamp in [gaiascanlaw.tdr1, gaiascanlaw.tdr2, gaiascanlaw.tdr3, gaiascanlaw.tdr4]:
+            ax.axvline(timestamp, color=color_ref, ls='--', label=label_dr)
+            label_dr = ''
+
+    if true_params is not None:
+        ax.axvline(true_params['t0'], color=color_event, ls='-', lw=2.5, label=label_t0)
+    
+    if labels: ax.scatter(0, 0, label=' ', alpha=0)
 
 
 def plotAL(posterior, obsdata, output_dir, source_id, true_params=None):
@@ -283,24 +289,26 @@ def plotAL(posterior, obsdata, output_dir, source_id, true_params=None):
 
         fig, (ax1, ax2) = plt.subplots(2, 1, height_ratios=[2,1], figsize=(16, 8), sharex=True)
         
-        plot_times(ax=ax1, refEpoch = refEpoch)
-        plot_times(ax=ax2, refEpoch = refEpoch)
+        plot_times(ax=ax1, refEpoch = refEpoch, true_params=true_params)
+        plot_times(ax=ax2, refEpoch = refEpoch, true_params=true_params)
 
         ax1.errorbar(t, wObs, yerr=wErr, color='black',
                      label='observations', zorder=2, fmt='.', ms=12, elinewidth=1)
-        ax2.axhline(0, color='black')
+        ax2.axhline(0, color=color_median)
         ax1.errorbar(t, ws_med, yerr=wErr, color=color_median,
                          zorder=2, fmt='.', ms=8, elinewidth=0.5, alpha=0.8, label='model fit')
 
-        ax2.errorbar(t, wObs - ws_med, yerr=wErr, color=color_median,
-                         zorder=2, fmt='.', ms=8, elinewidth=0.5, alpha=0.8)
+        ax2.errorbar(t, wObs - ws_med, yerr=wErr, color='black',
+                         zorder=2, fmt='.', ms=12, elinewidth=0.5, alpha=0.8)
 
         if true_params is not None:
             ws_true, mags_true = astrometry_sim(
             t, t-refEpoch, sc_a, fw, fz,
             true_params['tE'], true_params['u0'], true_params['piE'], true_params['pmrac_S'], true_params['pmdec_S'], true_params['thetaE'], true_params['varpi_S'], true_params['t0'], true_params['m0'], true_params['alpha0_S'], true_params['delta0_S'], true_params['phi'])
             ax1.scatter(t, ws_true, edgecolor=color_true, facecolor='None',
-                         label='ground truth', s=100, alpha=0.5, zorder=5)
+                         label='ground truth', s=140, alpha=1, zorder=5)
+            ax2.scatter(t, ws_true - ws_med, edgecolor=color_true, facecolor='None',
+                         label='ground truth', s=140, alpha=1, zorder=5)
         
         # Axes
         ax1.grid()
@@ -308,7 +316,7 @@ def plotAL(posterior, obsdata, output_dir, source_id, true_params=None):
         ax1.legend(loc='center left', bbox_to_anchor=(1, 0.1))
         plt.subplots_adjust(hspace=0.)
         ax1.set_ylabel(r'$w$ [mas]')
-        ax2.set_ylabel('Residuals [mas]')
+        ax2.set_ylabel('$w - w_{fit}$ [mas]')
         ax2.set_xlabel('Time [years]')
         ax2.set_xlim(2014.25, 2020.25)
         
