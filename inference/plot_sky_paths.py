@@ -12,11 +12,7 @@ from utils import astrometry_sim, rotation
 from cmap import Colormap
 cm = Colormap('tol:muted')
 
-color_median = cm(7)
-color_sample = cm(6)
-ref_colour = '#009988'
-event_colour = '#33BBEE'
-
+color_event, color_ref, color_true, color_sample, color_median = cm(1), cm(2), cm(3), cm(6), cm(7)
 
 def compute_u_NE(time, t0, tE, u0, piE, phi, sc_a, fw, fz):
     # compute linear part of motion:
@@ -266,12 +262,12 @@ def plot_times(ax, ref=True, refEpoch=2017.5, labels=True):
     else:
         label_dr, label_ref, label_dec, label_t0, label_tE, label_max = '', '', '', '', '', ''
 
-    if ref: ax.axvline(refEpoch, color=ref_colour, label=label_ref)
+    if ref: ax.axvline(refEpoch, color=color_ref, label=label_ref)
 
     if phot_params is not None:
         t0, tE, u0 = phot_params.t0, phot_params.tE, phot_params.u0
         tau_shift_max = np.sqrt(2 - u0**2)
-        ax.axvline(t0, color=event_colour, ls='-', label=label_t0)
+        ax.axvline(t0, color=color_event, ls='-', label=label_t0)
 
 
 def plotAL(posterior, obsdata, output_dir, source_id, true_params=None):
@@ -285,15 +281,8 @@ def plotAL(posterior, obsdata, output_dir, source_id, true_params=None):
                 t, t-refEpoch, sc_a, fw, fz,
                 tE_med, u0_med, piE_med, pmrac_S_med, pmdec_S_med, thetaE_med, varpi_S_med, t0_med, m0_med, alpha0_S_med, delta0_S_med, phi_med)
 
-        
-        if true_params is not None:
-            ws_true, mags_true = astrometry_sim(
-            t, t-refEpoch, sc_a, fw, fz,
-            true_params['tE'], true_params['u0'], true_params['piE'], true_params['pmrac_S'], true_params['pmdec_S'], true_params['thetaE'], true_params['varpi_S'], true_params['t0'], true_params['m0'], true_params['alpha0_S'], true_params['delta0_S'], true_params['phi'])
-        
-        
         fig, (ax1, ax2) = plt.subplots(2, 1, height_ratios=[2,1], figsize=(16, 8), sharex=True)
-
+        
         plot_times(ax=ax1, refEpoch = refEpoch)
         plot_times(ax=ax2, refEpoch = refEpoch)
 
@@ -306,7 +295,13 @@ def plotAL(posterior, obsdata, output_dir, source_id, true_params=None):
         ax2.errorbar(t, wObs - ws_med, yerr=wErr, color=color_median,
                          zorder=2, fmt='.', ms=8, elinewidth=0.5, alpha=0.8)
 
-
+        if true_params is not None:
+            ws_true, mags_true = astrometry_sim(
+            t, t-refEpoch, sc_a, fw, fz,
+            true_params['tE'], true_params['u0'], true_params['piE'], true_params['pmrac_S'], true_params['pmdec_S'], true_params['thetaE'], true_params['varpi_S'], true_params['t0'], true_params['m0'], true_params['alpha0_S'], true_params['delta0_S'], true_params['phi'])
+            ax1.scatter(t, ws_true, edgecolor=color_true, facecolor='None',
+                         label='ground truth', s=100, alpha=0.5, zorder=5)
+        
         # Axes
         ax1.grid()
         ax2.grid()
@@ -315,13 +310,8 @@ def plotAL(posterior, obsdata, output_dir, source_id, true_params=None):
         ax1.set_ylabel(r'$w$ [mas]')
         ax2.set_ylabel('Residuals [mas]')
         ax2.set_xlabel('Time [years]')
-        ax2.set_xlim(2014.25, 2021.2)
+        ax2.set_xlim(2014.25, 2020.25)
         
-        if true_params is not None:
-            ax1.scatter(t, ws_true, edgecolor='green', facecolor='None',
-                         label='observations', s=100, alpha=0.5, zorder=5)             
-            ax2.scatter(t, wObs - ws_true, color='green', facecolor='None',
-                 label='observations', s=100, alpha=0.5, zorder=5)
         
         plt.tight_layout()
         plt.savefig(f'{output_dir}/{source_id}_median_vs_obs_AL.png',dpi=200)
