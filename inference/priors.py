@@ -66,8 +66,8 @@ class SignedLogUniform:
         assert upper > lower
         self.b_min = lower
         self.b_max = upper
-        self.log_b_min = np.log(lower)
-        self.log_b_max = np.log(upper)
+        self.log_b_min = np.log10(lower)
+        self.log_b_max = np.log10(upper)
         self.sign = sign
 
     def ppf(self, x):
